@@ -83,9 +83,13 @@ app.message(async ({ message, client, team }) => {
     }
 
     const text = (message.text || '').toLowerCase().trim();
+    
+    // Log the message text for debugging
+    console.log(`📝 Message text: "${message.text || '(empty)'}" -> processed as: "${text}"`);
 
     // Only process baseline and checkin commands
     if (!text.startsWith('baseline') && !text.startsWith('checkin')) {
+      console.log(`⏭️ Skipping message - not a baseline or checkin command`);
       return;
     }
 
@@ -98,10 +102,22 @@ app.message(async ({ message, client, team }) => {
     // Pass the channel ID so handlers can respond in the same channel/DM
     if (text.startsWith('baseline')) {
       console.log(`🎯 Processing baseline command`);
-      await handleBaseline(message, client, message.channel);
+      try {
+        await handleBaseline(message, client, message.channel);
+        console.log(`✅ Baseline command completed`);
+      } catch (error) {
+        console.error(`❌ Error in handleBaseline:`, error);
+        throw error; // Re-throw to be caught by outer catch
+      }
     } else if (text.startsWith('checkin')) {
       console.log(`🎯 Processing checkin command`);
-      await handleCheckin(message, client, message.channel);
+      try {
+        await handleCheckin(message, client, message.channel);
+        console.log(`✅ Checkin command completed`);
+      } catch (error) {
+        console.error(`❌ Error in handleCheckin:`, error);
+        throw error; // Re-throw to be caught by outer catch
+      }
     }
   } catch (error) {
     console.error('❌ Error processing message:', error);
