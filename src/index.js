@@ -1,0 +1,190 @@
+/**
+ * Main entry point for the Weight Loss Challenge Slack Bot
+ */
+
+require('dotenv').config();
+
+const { App } = require('@slack/bolt');
+const express = require('express');
+const cron = require('node-cron');
+
+// Import command handlers
+const { handleBaseline } = require('./commands/baseline');
+const { handleCheckin } = require('./commands/checkin');
+
+// Import slash command handlers
+const { handleLeaderboard } = require('./slashCommands/leaderboard');
+const { handleResetChallenge } = require('./slashCommands/resetChallenge');
+const { handleSetDeadline } = require('./slashCommands/setDeadline');
+const { handleChallengeStatus } = require('./slashCommands/challengeStatus');
+
+// Import final leaderboard service
+const { shouldSendFinalLeaderboard, sendFinalLeaderboard } = require('./services/finalLeaderboard');
+
+// Initialize Slack app
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  socketMode: true,
+  appToken: process.env.SLACK_APP_TOKEN,
+  logLevel: 'DEBUG', // Enable debug logging
+});
+
+// Create Express app for health check endpoint (required by Render.com)
+const expressApp = express();
+
+// Health check endpoint for Render.com
+expressApp.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Handle DM commands (baseline and checkin)
+app.message(async ({ message, client }) => {
+  // Debug logging - REMOVE AFTER TESTING
+  console.log('📨 Message received:', {
+    text: message.text,
+    channel_type: message.channel_type,
+    subtype: message.subtype,
+    bot_id: message.bot_id,
+    user: message.user,
+    channel: message.channel
+  });
+
+  // Only process messages in DMs (channel_type is 'im')
+  if (message.channel_type !== 'im' || message.subtype || message.bot_id) {
+    console.log('❌ Message filtered out:', {
+      isIM: message.channel_type === 'im',
+      hasSubtype: !!message.subtype,
+      isBot: !!message.bot_id
+    });
+    return;
+  }
+
+  const text = (message.text || '').toLowerCase().trim();
+  console.log('🔍 Processing text:', text);
+
+  if (text.startsWith('baseline')) {
+    console.log('✅ Calling handleBaseline');
+    await handleBaseline(message, client);
+  } else if (text.startsWith('checkin')) {
+    console.log('✅ Calling handleCheckin');
+    await handleCheckin(message, client);
+  } else {
+    console.log('❌ Message does not start with baseline or checkin');
+  }
+});
+
+// Register slash commands
+app.command('/leaderboard', async ({ ack, respond, client }) => {
+  await handleLeaderboard(ack, respond, client);
+});
+
+app.command('/reset-challenge', async ({ ack, respond, body, client }) => {
+  await handleResetChallenge(ack, respond, body, client);
+});
+
+app.command('/set-deadline', async ({ ack, respond, body }) => {
+  await handleSetDeadline(ack, respond, body);
+});
+
+app.command('/challenge-status', async ({ ack, respond }) => {
+  await handleChallengeStatus(ack, respond);
+});
+
+// Start the Express server and Bolt app
+(async () => {
+  const port = process.env.PORT || 3000;
+  
+  // Check environment variables
+  console.log('🔍 Checking configuration...');
+  console.log('SLACK_BOT_TOKEN:', process.env.SLACK_BOT_TOKEN ? `Set (${process.env.SLACK_BOT_TOKEN.substring(0, 10)}...)` : '❌ MISSING');
+  console.log('SLACK_APP_TOKEN:', process.env.SLACK_APP_TOKEN ? `Set (${process.env.SLACK_APP_TOKEN.substring(0, 10)}...)` : '❌ MISSING');
+  
+  if (!process.env.SLACK_BOT_TOKEN || !process.env.SLACK_APP_TOKEN) {
+    console.error('❌ Missing required tokens! Check your .env file.');
+    process.exit(1);
+  }
+  
+  if (!process.env.SLACK_APP_TOKEN.startsWith('xapp-')) {
+    console.error('❌ SLACK_APP_TOKEN should start with "xapp-". This should be an App-Level Token from Socket Mode settings.');
+    process.exit(1);
+  }
+  
+  if (!process.env.SLACK_BOT_TOKEN.startsWith('xoxb-')) {
+    console.error('❌ SLACK_BOT_TOKEN should start with "xoxb-". This should be a Bot User OAuth Token.');
+    process.exit(1);
+  }
+  
+  try {
+    // Start Express server for health checks
+    expressApp.listen(port, () => {
+      console.log(`🌐 Health check server running on port ${port}`);
+    });
+    
+    // Start Bolt app (Socket Mode doesn't need port)
+    console.log('🔌 Connecting to Slack via Socket Mode...');
+    await app.start();
+    console.log(`⚡️ Weight Loss Bot started!`);
+    
+    // Verify connection by testing API access
+    try {
+      console.log('🔍 Verifying connection...');
+      const authTest = await app.client.auth.test();
+      console.log('✅ Slack API connection verified!');
+      console.log('   Bot User ID:', authTest.user_id);
+      console.log('   Bot User Name:', authTest.user);
+      console.log('   Team:', authTest.team);
+    } catch (error) {
+      console.error('❌ Failed to verify Slack API connection:', error.message);
+      console.error('   This means Socket Mode is not connected properly.');
+      console.error('   Check your SLACK_APP_TOKEN and Socket Mode settings in Slack app configuration.');
+    }
+
+    // Schedule final leaderboard check to run daily at 9am
+    // Cron format: minute hour day month day-of-week
+    // '0 9 * * *' = 9:00 AM every day (uses server's local timezone)
+    // Set FINAL_LEADERBOARD_TIMEZONE env var to specify timezone (e.g., 'America/New_York')
+    const cronOptions = process.env.FINAL_LEADERBOARD_TIMEZONE 
+      ? { timezone: process.env.FINAL_LEADERBOARD_TIMEZONE }
+      : {};
+    
+    cron.schedule('0 9 * * *', async () => {
+      console.log('⏰ Daily check: Checking if final leaderboard should be sent...');
+      try {
+        if (await shouldSendFinalLeaderboard()) {
+          console.log('🎉 Challenge ended yesterday! Sending final leaderboard...');
+          await sendFinalLeaderboard(app.client);
+        } else {
+          console.log('   No final leaderboard needed at this time.');
+        }
+      } catch (error) {
+        console.error('❌ Error in final leaderboard cron job:', error);
+      }
+    }, cronOptions);
+    
+    const timezoneInfo = process.env.FINAL_LEADERBOARD_TIMEZONE 
+      ? ` (${process.env.FINAL_LEADERBOARD_TIMEZONE} timezone)`
+      : ' (server local time)';
+    console.log(`⏰ Final leaderboard scheduler started (runs daily at 9:00 AM${timezoneInfo})`);
+  } catch (error) {
+    console.error('❌ Error starting app:', error.message);
+    console.error('Full error:', error);
+    if (error.code === 'slack_webapi_platform_error') {
+      console.error('💡 This might be a token issue. Check your SLACK_APP_TOKEN in .env file.');
+    }
+    process.exit(1);
+  }
+})();
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing app');
+  await app.stop();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing app');
+  await app.stop();
+  process.exit(0);
+});
+

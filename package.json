@@ -1,0 +1,24 @@
+{
+  "name": "weightlossbot",
+  "version": "1.0.0",
+  "description": "Production-ready Slack bot for fitness weight loss challenge tracking",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "setup": "node src/setup/initSheet.js"
+  },
+  "keywords": ["slack", "bot", "fitness", "weight-loss"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/bolt": "^3.17.1",
+    "googleapis": "^144.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

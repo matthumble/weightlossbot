@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: weightlossbot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_APP_TOKEN
+        sync: false
+      - key: GOOGLE_SHEETS_CREDENTIALS
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: FITNESS_CHANNEL
+        sync: false
+
+
