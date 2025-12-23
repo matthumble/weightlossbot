@@ -211,7 +211,8 @@ async function addCheckin(slackId, weight, date) {
     const checkins = userData.checkins || [];
     checkins.push({ weight, date });
 
-    // Calculate total lost
+    // Calculate total lost: baseline - latest checkin weight
+    // The latest checkin is the one we just added (weight parameter)
     const totalLost = userData.baselineWeight - weight;
 
     const rowIndex = await findUserRowIndex(slackId);

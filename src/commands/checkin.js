@@ -75,6 +75,8 @@ async function handleCheckin(event, client) {
 
     // Get updated user data to calculate stats
     const updatedUserData = await sheets.getUserData(userId);
+    
+    // Calculate total lost: baseline - latest checkin weight (current checkin is the latest)
     const totalLost = updatedUserData.baselineWeight - weight;
     const checkinCount = updatedUserData.checkins.length;
 
