@@ -53,7 +53,20 @@ The bot requires configuration in several places:
 7. **Copy the App-Level Token** (starts with `xapp-`) - you'll need this for `SLACK_APP_TOKEN`
    - ⚠️ **Important**: You can only see this token once! Copy it immediately.
 
-### 1.4 Create Slash Commands
+### 1.4 Configure Event Subscriptions (Required for DMs!)
+1. In the left sidebar, go to **"Event Subscriptions"**
+2. Toggle **"Enable Events"** to **ON**
+3. Scroll down to **"Subscribe to bot events"** section
+4. Click **"Add Bot User Event"** and add:
+   - `message.im` - This allows the bot to receive direct messages (DMs)
+5. Click **"Save Changes"** at the bottom
+6. **Important**: After saving, you may need to reinstall the app:
+   - Go to **"OAuth & Permissions"**
+   - Click **"Reinstall to Workspace"** (if the button appears)
+   - Review and approve the new permissions
+   - ⚠️ **Note**: Without this step, DMs will not work even if Socket Mode is enabled!
+
+### 1.5 Create Slash Commands
 1. In the left sidebar, go to **"Slash Commands"**
 2. Click **"Create New Command"** and create these 4 commands:
 
@@ -77,13 +90,13 @@ The bot requires configuration in several places:
    - Short Description: `View challenge status and deadline`
    - Click **"Save"**
 
-### 1.5 Get Your User ID (for Admin Access)
+### 1.6 Get Your User ID (for Admin Access)
 1. In Slack, click on your profile picture/name
 2. Click the three dots (⋮) menu
 3. Select **"Copy member ID"**
 4. This is your User ID (starts with `U`) - you'll need this for `ADMIN_IDS`
 
-### 1.6 Get Your Channel ID (for Leaderboard Posts)
+### 1.7 Get Your Channel ID (for Leaderboard Posts)
 1. In Slack, navigate to the channel where you want leaderboards posted (e.g., `#fitness-channel`)
 2. Right-click on the channel name in the sidebar
 3. Click **"View channel details"** (or "View details")
@@ -91,7 +104,7 @@ The bot requires configuration in several places:
    - Alternatively, look at the channel URL: `https://workspace.slack.com/archives/C1234567890` - the `C1234567890` is the Channel ID
 5. **Copy the Channel ID** - you'll need this for `FITNESS_CHANNEL`
 
-### 1.7 Invite Bot to Channel (Important!)
+### 1.8 Invite Bot to Channel (Important!)
 1. In the channel where you want leaderboards posted (e.g., `#fitness-channel`)
 2. Type `/invite @YourBotName` (use the actual bot name)
 3. Or: Right-click channel → "Integrations" → "Add apps" → Find your bot → Add
@@ -212,12 +225,12 @@ NODE_ENV=development
 - Just the ID, not the full URL
 
 **ADMIN_IDS**
-- Paste your User ID from Step 1.5
+- Paste your User ID from Step 1.6
 - For multiple admins, separate with commas: `U1234567,U7654321`
 - Should start with `U`
 
 **FITNESS_CHANNEL**
-- Paste the Channel ID from Step 1.6
+- Paste the Channel ID from Step 1.7
 - Should start with `C`
 
 **PORT**
@@ -447,11 +460,11 @@ Fill in the service configuration:
 
    **Bot Configuration:**
    - **Key**: `ADMIN_IDS`
-     - **Value**: Your User ID from Step 1.5 (starts with `U`)
+     - **Value**: Your User ID from Step 1.6 (starts with `U`)
      - For multiple admins: `U1234567,U7654321` (comma-separated, no spaces)
    
    - **Key**: `FITNESS_CHANNEL`
-     - **Value**: Your Channel ID from Step 1.6 (starts with `C`)
+     - **Value**: Your Channel ID from Step 1.7 (starts with `C`)
 
    **Server Configuration:**
    - **Key**: `NODE_ENV`

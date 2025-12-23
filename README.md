@@ -53,19 +53,25 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
    - Create an app-level token with `connections:write` scope
    - Copy the **App-Level Token** (starts with `xapp-`)
 
-5. Go to **Slash Commands**:
+5. Go to **Event Subscriptions** (Required for DMs!):
+   - Enable Events
+   - Subscribe to bot event: `message.im`
+   - Save changes
+   - Reinstall app to workspace if prompted
+
+6. Go to **Slash Commands**:
    - Create 4 slash commands:
      - `/leaderboard` - Description: "View the weight loss leaderboard"
      - `/reset-challenge` - Description: "Reset the challenge (admin only)"
      - `/set-deadline` - Description: "Set challenge deadline (admin only)"
      - `/challenge-status` - Description: "View challenge status and deadline"
 
-6. Get your Slack User ID (for admin access):
+7. Get your Slack User ID (for admin access):
    - Go to your Slack profile
    - Click the three dots menu → Copy member ID
    - This is your User ID (starts with `U`)
 
-7. Get your channel ID (for #fitness-channel):
+8. Get your channel ID (for #fitness-channel):
    - Right-click on the channel → View channel details
    - Scroll down to find the Channel ID (starts with `C`)
 
