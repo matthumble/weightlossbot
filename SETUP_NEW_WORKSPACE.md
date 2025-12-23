@@ -53,18 +53,20 @@ The bot requires configuration in several places:
 7. **Copy the App-Level Token** (starts with `xapp-`) - you'll need this for `SLACK_APP_TOKEN`
    - ⚠️ **Important**: You can only see this token once! Copy it immediately.
 
-### 1.4 Configure Event Subscriptions (Required for DMs!)
+### 1.4 Configure Event Subscriptions (Required for DMs and Channel Messages!)
 1. In the left sidebar, go to **"Event Subscriptions"**
 2. Toggle **"Enable Events"** to **ON**
 3. Scroll down to **"Subscribe to bot events"** section
 4. Click **"Add Bot User Event"** and add:
    - `message.im` - This allows the bot to receive direct messages (DMs)
+   - `message.channels` - This allows the bot to receive messages in public channels
+   - `message.groups` - This allows the bot to receive messages in private channels (optional, if you want private channel support)
 5. Click **"Save Changes"** at the bottom
 6. **Important**: After saving, you may need to reinstall the app:
    - Go to **"OAuth & Permissions"**
    - Click **"Reinstall to Workspace"** (if the button appears)
    - Review and approve the new permissions
-   - ⚠️ **Note**: Without this step, DMs will not work even if Socket Mode is enabled!
+   - ⚠️ **Note**: Without this step, DMs and channel messages will not work even if Socket Mode is enabled!
 
 ### 1.5 Create Slash Commands
 1. In the left sidebar, go to **"Slash Commands"**

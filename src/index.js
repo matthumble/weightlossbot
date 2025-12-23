@@ -70,7 +70,7 @@ expressApp.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Handle DM commands (baseline and checkin)
+// Handle baseline and checkin commands (works in both DMs and channels)
 app.message(async ({ message, client, team }) => {
   try {
     // Log all incoming messages for debugging (helps identify if messages are being received)
@@ -82,9 +82,14 @@ app.message(async ({ message, client, team }) => {
       return;
     }
 
-    // Check if message is from a DM
-    // Slack DM channel IDs start with 'D', or we can check channel_type
-    // Also check if channel_type is in the event structure
+    const text = (message.text || '').toLowerCase().trim();
+
+    // Only process baseline and checkin commands
+    if (!text.startsWith('baseline') && !text.startsWith('checkin')) {
+      return;
+    }
+
+    // Determine if message is from DM or channel
     let isDM = false;
     let detectionMethod = '';
     
@@ -101,48 +106,32 @@ app.message(async ({ message, client, team }) => {
     // Method 3: Fallback - check via API (only if needed)
     else if (message.channel) {
       try {
-        console.log(`🔍 Checking channel type via API for channel: ${message.channel}`);
         const channelInfo = await client.conversations.info({
           channel: message.channel
         });
         if (channelInfo.channel && channelInfo.channel.is_im) {
           isDM = true;
           detectionMethod = 'API call (conversations.info)';
-        } else {
-          console.log(`ℹ️ Channel ${message.channel} is not a DM (is_im: ${channelInfo.channel?.is_im || false})`);
         }
       } catch (error) {
-        // If API call fails, log but don't process (safer to skip)
-        console.log(`⚠️ Could not verify channel type for ${message.channel}:`, error.message);
-        return;
+        // If API call fails, assume it's a channel (not a DM)
+        console.log(`ℹ️ Could not verify channel type for ${message.channel}, assuming channel:`, error.message);
       }
     }
 
-    // Log DM detection result
-    if (isDM) {
-      console.log(`✅ DM detected using method: ${detectionMethod}`);
-    } else {
-      console.log(`⏭️ Not a DM - skipping. Channel: ${message.channel}, Channel Type: ${message.channel_type || 'not set'}`);
-      return;
-    }
+    const location = isDM ? 'DM' : 'channel';
+    console.log(`📩 Command received in ${location} from user ${message.user} in channel ${message.channel}: ${text.substring(0, 50)}`);
 
-    // Log DM received for debugging (helps identify if messages are being received)
-    console.log(`📩 DM received from user ${message.user} in channel ${message.channel}: ${(message.text || '').substring(0, 50)}`);
-
-    const text = (message.text || '').toLowerCase().trim();
-
+    // Pass the channel ID so handlers can respond in the same channel/DM
     if (text.startsWith('baseline')) {
       console.log(`🎯 Processing baseline command`);
-      await handleBaseline(message, client);
+      await handleBaseline(message, client, message.channel);
     } else if (text.startsWith('checkin')) {
       console.log(`🎯 Processing checkin command`);
-      await handleCheckin(message, client);
-    } else {
-      // Log unrecognized commands for debugging
-      console.log(`⚠️ Unrecognized DM command: "${text}"`);
+      await handleCheckin(message, client, message.channel);
     }
   } catch (error) {
-    console.error('❌ Error processing DM message:', error);
+    console.error('❌ Error processing message:', error);
     console.error('Error stack:', error.stack);
     // Try to send error message to user if possible
     try {

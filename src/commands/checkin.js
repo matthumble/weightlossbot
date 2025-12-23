@@ -1,5 +1,5 @@
 /**
- * Handle 'checkin' DM command
+ * Handle 'checkin' command (works in both DMs and channels)
  */
 
 const sheets = require('../services/sheets');
@@ -9,8 +9,9 @@ const { parseWeight, getTodayDate } = require('../utils/validation');
  * Handle checkin command
  * @param {Object} event - Slack message event
  * @param {Object} client - Slack WebClient
+ * @param {string} responseChannel - Channel ID to send response to (DM or channel)
  */
-async function handleCheckin(event, client) {
+async function handleCheckin(event, client, responseChannel) {
   const userId = event.user;
   const text = event.text || '';
 
@@ -21,7 +22,7 @@ async function handleCheckin(event, client) {
 
     if (deadline && today > deadline) {
       await client.chat.postMessage({
-        channel: userId,
+        channel: responseChannel,
         text: `❌ The challenge deadline has passed (${deadline}). Checkins are no longer accepted.`,
       });
       return;
@@ -37,23 +38,23 @@ async function handleCheckin(event, client) {
         const parsed = parseFloat(weightMatch[1]);
         if (parsed < 100) {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Weight must be at least 100lbs. Please enter a valid weight.",
           });
         } else if (parsed > 1000) {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Weight must be 1000lbs or less. Please enter a valid weight.",
           });
         } else {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Invalid format. Please use: `checkin 185lbs`\nExample: `checkin 185lbs`",
           });
         }
       } else {
         await client.chat.postMessage({
-          channel: userId,
+          channel: responseChannel,
           text: "❌ Invalid format. Please use: `checkin 185lbs`\nExample: `checkin 185lbs`",
         });
       }
@@ -64,7 +65,7 @@ async function handleCheckin(event, client) {
     const userData = await sheets.getUserData(userId);
     if (!userData || !userData.baselineWeight) {
       await client.chat.postMessage({
-        channel: userId,
+        channel: responseChannel,
         text: "❌ No baseline weight found. Please set your baseline first using: `baseline 200lbs`",
       });
       return;
@@ -94,7 +95,7 @@ async function handleCheckin(event, client) {
     }
 
     await client.chat.postMessage({
-      channel: userId,
+      channel: responseChannel,
       text: message,
     });
   } catch (error) {
@@ -106,7 +107,7 @@ async function handleCheckin(event, client) {
     }
 
     await client.chat.postMessage({
-      channel: userId,
+      channel: responseChannel,
       text: errorMessage,
     });
   }

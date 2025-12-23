@@ -1,10 +1,10 @@
 # Weight Loss Challenge Slack Bot
 
-A production-ready Slack bot built with Bolt for JavaScript that tracks fitness weight loss progress through DM commands and displays leaderboards. Data is stored in Google Sheets for easy viewing and analysis.
+A production-ready Slack bot built with Bolt for JavaScript that tracks fitness weight loss progress through commands (works in DMs and channels) and displays leaderboards. Data is stored in Google Sheets for easy viewing and analysis.
 
 ## Features
 
-- **DM Commands**:
+- **Baseline & Checkin Commands** (work in DMs and channels):
   - `baseline 200lbs` - Set your starting weight (one-time)
   - `checkin 185lbs` - Log your weekly weight with auto-timestamp
 
@@ -20,7 +20,7 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
   - One baseline per user enforcement
   - Input validation (lbs format only)
   - Admin-only commands with user ID validation
-  - DM confirmations for all actions
+  - Responses sent in the same channel/DM where command was sent
 
 ## Prerequisites
 
@@ -53,9 +53,9 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
    - Create an app-level token with `connections:write` scope
    - Copy the **App-Level Token** (starts with `xapp-`)
 
-5. Go to **Event Subscriptions** (Required for DMs!):
+5. Go to **Event Subscriptions** (Required for DMs and Channel Messages!):
    - Enable Events
-   - Subscribe to bot event: `message.im`
+   - Subscribe to bot events: `message.im` and `message.channels`
    - Save changes
    - Reinstall app to workspace if prompted
 

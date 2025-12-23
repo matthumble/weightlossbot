@@ -3,6 +3,7 @@ services:
     name: weightlossbot
     env: node
     plan: free
+    branch: clarify-total-lost
     buildCommand: npm install
     startCommand: npm start
     envVars:
