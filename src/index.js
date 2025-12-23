@@ -32,14 +32,33 @@ const app = new App({
 // Handle Socket Mode state machine errors gracefully (prevents crashes on Render)
 // This must be set up before app.start() to catch connection errors
 process.on('uncaughtException', (error) => {
-  // Check if it's a Socket Mode state machine error - don't crash on these
-  if (error && error.message && error.message.includes('Unhandled event') && error.message.includes('StateMachine')) {
-    console.error('⚠️ Socket Mode state machine error (non-fatal, will reconnect):', error.message);
-    // Don't exit - Socket Mode will handle reconnection automatically
+  if (!error) {
+    console.error('Uncaught Exception: (unknown error)');
+    process.exit(1);
     return;
   }
+
+  const errorMessage = error.message || '';
+  const errorStack = error.stack || '';
+  
+  // Check if it's a Socket Mode state machine error - don't crash on these
+  const isSocketModeError = (
+    errorMessage.includes('Unhandled event') ||
+    errorStack.includes('StateMachine') ||
+    errorStack.includes('SocketModeClient') ||
+    errorStack.includes('finity/lib/core/StateMachine')
+  );
+  
+  if (isSocketModeError) {
+    console.error('⚠️ Socket Mode state machine error (non-fatal, will reconnect):', errorMessage);
+    // Don't exit - Socket Mode will handle reconnection automatically
+    // In Node.js, returning from uncaughtException handler prevents default exit
+    return;
+  }
+  
   // For other uncaught exceptions, log and exit
-  console.error('Uncaught Exception:', error);
+  console.error('Uncaught Exception:', errorMessage);
+  console.error('Stack:', errorStack);
   process.exit(1);
 });
 
