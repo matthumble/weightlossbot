@@ -72,17 +72,70 @@ expressApp.get('/health', (req, res) => {
 
 // Handle DM commands (baseline and checkin)
 app.message(async ({ message, client }) => {
-  // Only process messages in DMs (channel_type is 'im')
-  if (message.channel_type !== 'im' || message.subtype || message.bot_id) {
-    return;
-  }
+  try {
+    // Skip bot messages and messages with subtypes
+    if (message.subtype || message.bot_id) {
+      return;
+    }
 
-  const text = (message.text || '').toLowerCase().trim();
+    // Check if message is from a DM
+    // Slack DM channel IDs start with 'D', or we can check channel_type
+    // Also check if channel_type is in the event structure
+    let isDM = false;
+    
+    // Method 1: Check channel_type property (most reliable)
+    if (message.channel_type === 'im') {
+      isDM = true;
+    }
+    // Method 2: Check if channel ID starts with 'D' (DM channel pattern)
+    else if (message.channel && message.channel.startsWith('D')) {
+      isDM = true;
+    }
+    // Method 3: Fallback - check via API (only if needed)
+    else if (message.channel) {
+      try {
+        const channelInfo = await client.conversations.info({
+          channel: message.channel
+        });
+        if (channelInfo.channel && channelInfo.channel.is_im) {
+          isDM = true;
+        }
+      } catch (error) {
+        // If API call fails, log but don't process (safer to skip)
+        console.log(`⚠️ Could not verify channel type for ${message.channel}:`, error.message);
+        return;
+      }
+    }
 
-  if (text.startsWith('baseline')) {
-    await handleBaseline(message, client);
-  } else if (text.startsWith('checkin')) {
-    await handleCheckin(message, client);
+    // Only process messages in DMs
+    if (!isDM) {
+      return;
+    }
+
+    // Log DM received for debugging (helps identify if messages are being received)
+    console.log(`📩 DM received from user ${message.user} in channel ${message.channel}: ${(message.text || '').substring(0, 50)}`);
+
+    const text = (message.text || '').toLowerCase().trim();
+
+    if (text.startsWith('baseline')) {
+      await handleBaseline(message, client);
+    } else if (text.startsWith('checkin')) {
+      await handleCheckin(message, client);
+    } else {
+      // Log unrecognized commands for debugging
+      console.log(`⚠️ Unrecognized DM command: "${text}"`);
+    }
+  } catch (error) {
+    console.error('❌ Error processing DM message:', error);
+    // Try to send error message to user if possible
+    try {
+      await client.chat.postMessage({
+        channel: message.channel,
+        text: '❌ An error occurred processing your message. Please try again.',
+      });
+    } catch (sendError) {
+      console.error('Failed to send error message to user:', sendError);
+    }
   }
 });
 
