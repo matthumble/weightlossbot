@@ -26,7 +26,21 @@ const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   socketMode: true,
   appToken: process.env.SLACK_APP_TOKEN,
-  logLevel: 'DEBUG', // Enable debug logging
+  logLevel: process.env.NODE_ENV === 'production' ? 'INFO' : 'DEBUG',
+});
+
+// Handle Socket Mode state machine errors gracefully (prevents crashes on Render)
+// This must be set up before app.start() to catch connection errors
+process.on('uncaughtException', (error) => {
+  // Check if it's a Socket Mode state machine error - don't crash on these
+  if (error && error.message && error.message.includes('Unhandled event') && error.message.includes('StateMachine')) {
+    console.error('⚠️ Socket Mode state machine error (non-fatal, will reconnect):', error.message);
+    // Don't exit - Socket Mode will handle reconnection automatically
+    return;
+  }
+  // For other uncaught exceptions, log and exit
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
 });
 
 // Create Express app for health check endpoint (required by Render.com)
@@ -122,8 +136,31 @@ app.command('/challenge-status', async ({ ack, respond }) => {
     
     // Start Bolt app (Socket Mode doesn't need port)
     console.log('🔌 Connecting to Slack via Socket Mode...');
-    await app.start();
-    console.log(`⚡️ Weight Loss Bot started!`);
+    try {
+      await app.start();
+      console.log(`⚡️ Weight Loss Bot started!`);
+      
+      // Add Socket Mode error handlers after successful start
+      if (app.receiver && app.receiver.client) {
+        app.receiver.client.on('error', (error) => {
+          console.error('⚠️ Socket Mode client error:', error.message || error);
+          // Don't crash - let it try to reconnect
+        });
+
+        app.receiver.client.on('close', (code, reason) => {
+          console.log(`⚠️ Socket Mode connection closed. Code: ${code}. Will attempt to reconnect.`);
+        });
+      }
+    } catch (error) {
+      // If it's a Socket Mode connection error, log but don't exit
+      if (error.message && (error.message.includes('StateMachine') || error.message.includes('Unhandled event'))) {
+        console.error('⚠️ Socket Mode connection issue (non-fatal):', error.message);
+        console.log('Bot will attempt to reconnect automatically...');
+        // Don't exit - the error handler above will catch reconnection attempts
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
     
     // Verify connection by testing API access
     try {
