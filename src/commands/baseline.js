@@ -14,12 +14,9 @@ async function handleBaseline(event, client) {
   const userId = event.user;
   const text = event.text || '';
 
-  console.log('🔵 handleBaseline called:', { userId, text });
-
   try {
     // Parse weight from message
     const weight = parseWeight(text);
-    console.log('⚖️ Parsed weight:', weight);
 
     if (!weight) {
       // Check if it's a format issue or range issue
@@ -52,15 +49,11 @@ async function handleBaseline(event, client) {
     }
 
     // Get user info
-    console.log('👤 Getting user info for:', userId);
     const userInfo = await client.users.info({ user: userId });
     const username = userInfo.user.name;
-    console.log('👤 Username:', username);
 
     // Check if user already has a baseline
-    console.log('🔍 Checking for existing user data...');
     const existingUser = await sheets.getUserData(userId);
-    console.log('🔍 Existing user data:', existingUser ? 'Found' : 'Not found');
     if (existingUser && existingUser.baselineWeight !== null) {
       await client.chat.postMessage({
         channel: userId,
@@ -71,19 +64,14 @@ async function handleBaseline(event, client) {
 
     // Set baseline
     const today = getTodayDate();
-    console.log('💾 Setting baseline:', { userId, username, weight, today });
     await sheets.setBaseline(userId, username, weight, today);
-    console.log('✅ Baseline set successfully');
 
-    console.log('📤 Sending confirmation message...');
     await client.chat.postMessage({
       channel: userId,
       text: `✅ Baseline weight set: ${weight}lbs\nDate: ${today}\n\nYou can now log checkins using: \`checkin 185lbs\``,
     });
-    console.log('✅ Confirmation message sent');
   } catch (error) {
-    console.error('❌ Error handling baseline command:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error handling baseline command:', error);
     
     let errorMessage = "❌ An error occurred while setting your baseline. Please try again.";
     if (error.message === 'User already has a baseline weight set') {

@@ -72,37 +72,17 @@ expressApp.get('/health', (req, res) => {
 
 // Handle DM commands (baseline and checkin)
 app.message(async ({ message, client }) => {
-  // Debug logging - REMOVE AFTER TESTING
-  console.log('📨 Message received:', {
-    text: message.text,
-    channel_type: message.channel_type,
-    subtype: message.subtype,
-    bot_id: message.bot_id,
-    user: message.user,
-    channel: message.channel
-  });
-
   // Only process messages in DMs (channel_type is 'im')
   if (message.channel_type !== 'im' || message.subtype || message.bot_id) {
-    console.log('❌ Message filtered out:', {
-      isIM: message.channel_type === 'im',
-      hasSubtype: !!message.subtype,
-      isBot: !!message.bot_id
-    });
     return;
   }
 
   const text = (message.text || '').toLowerCase().trim();
-  console.log('🔍 Processing text:', text);
 
   if (text.startsWith('baseline')) {
-    console.log('✅ Calling handleBaseline');
     await handleBaseline(message, client);
   } else if (text.startsWith('checkin')) {
-    console.log('✅ Calling handleCheckin');
     await handleCheckin(message, client);
-  } else {
-    console.log('❌ Message does not start with baseline or checkin');
   }
 });
 
