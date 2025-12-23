@@ -71,10 +71,14 @@ expressApp.get('/health', (req, res) => {
 });
 
 // Handle DM commands (baseline and checkin)
-app.message(async ({ message, client }) => {
+app.message(async ({ message, client, team }) => {
   try {
+    // Log all incoming messages for debugging (helps identify if messages are being received)
+    console.log(`📨 Message received - Team: ${team || 'unknown'}, Channel: ${message.channel}, User: ${message.user}, Subtype: ${message.subtype || 'none'}, Bot ID: ${message.bot_id || 'none'}, Channel Type: ${message.channel_type || 'not set'}`);
+    
     // Skip bot messages and messages with subtypes
     if (message.subtype || message.bot_id) {
+      console.log(`⏭️ Skipping message - subtype: ${message.subtype || 'none'}, bot_id: ${message.bot_id || 'none'}`);
       return;
     }
 
@@ -82,23 +86,30 @@ app.message(async ({ message, client }) => {
     // Slack DM channel IDs start with 'D', or we can check channel_type
     // Also check if channel_type is in the event structure
     let isDM = false;
+    let detectionMethod = '';
     
     // Method 1: Check channel_type property (most reliable)
     if (message.channel_type === 'im') {
       isDM = true;
+      detectionMethod = 'channel_type property';
     }
     // Method 2: Check if channel ID starts with 'D' (DM channel pattern)
     else if (message.channel && message.channel.startsWith('D')) {
       isDM = true;
+      detectionMethod = 'channel ID pattern (starts with D)';
     }
     // Method 3: Fallback - check via API (only if needed)
     else if (message.channel) {
       try {
+        console.log(`🔍 Checking channel type via API for channel: ${message.channel}`);
         const channelInfo = await client.conversations.info({
           channel: message.channel
         });
         if (channelInfo.channel && channelInfo.channel.is_im) {
           isDM = true;
+          detectionMethod = 'API call (conversations.info)';
+        } else {
+          console.log(`ℹ️ Channel ${message.channel} is not a DM (is_im: ${channelInfo.channel?.is_im || false})`);
         }
       } catch (error) {
         // If API call fails, log but don't process (safer to skip)
@@ -107,8 +118,11 @@ app.message(async ({ message, client }) => {
       }
     }
 
-    // Only process messages in DMs
-    if (!isDM) {
+    // Log DM detection result
+    if (isDM) {
+      console.log(`✅ DM detected using method: ${detectionMethod}`);
+    } else {
+      console.log(`⏭️ Not a DM - skipping. Channel: ${message.channel}, Channel Type: ${message.channel_type || 'not set'}`);
       return;
     }
 
@@ -118,8 +132,10 @@ app.message(async ({ message, client }) => {
     const text = (message.text || '').toLowerCase().trim();
 
     if (text.startsWith('baseline')) {
+      console.log(`🎯 Processing baseline command`);
       await handleBaseline(message, client);
     } else if (text.startsWith('checkin')) {
+      console.log(`🎯 Processing checkin command`);
       await handleCheckin(message, client);
     } else {
       // Log unrecognized commands for debugging
@@ -127,6 +143,7 @@ app.message(async ({ message, client }) => {
     }
   } catch (error) {
     console.error('❌ Error processing DM message:', error);
+    console.error('Error stack:', error.stack);
     // Try to send error message to user if possible
     try {
       await client.chat.postMessage({
