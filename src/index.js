@@ -89,36 +89,9 @@ app.message(async ({ message, client, team }) => {
       return;
     }
 
-    // Determine if message is from DM or channel
-    let isDM = false;
-    let detectionMethod = '';
-    
-    // Method 1: Check channel_type property (most reliable)
-    if (message.channel_type === 'im') {
-      isDM = true;
-      detectionMethod = 'channel_type property';
-    }
-    // Method 2: Check if channel ID starts with 'D' (DM channel pattern)
-    else if (message.channel && message.channel.startsWith('D')) {
-      isDM = true;
-      detectionMethod = 'channel ID pattern (starts with D)';
-    }
-    // Method 3: Fallback - check via API (only if needed)
-    else if (message.channel) {
-      try {
-        const channelInfo = await client.conversations.info({
-          channel: message.channel
-        });
-        if (channelInfo.channel && channelInfo.channel.is_im) {
-          isDM = true;
-          detectionMethod = 'API call (conversations.info)';
-        }
-      } catch (error) {
-        // If API call fails, assume it's a channel (not a DM)
-        console.log(`ℹ️ Could not verify channel type for ${message.channel}, assuming channel:`, error.message);
-      }
-    }
-
+    // Determine if message is from DM or channel (for logging purposes)
+    // We support both, so we don't need to verify via API
+    const isDM = message.channel_type === 'im' || (message.channel && message.channel.startsWith('D'));
     const location = isDM ? 'DM' : 'channel';
     console.log(`📩 Command received in ${location} from user ${message.user} in channel ${message.channel}: ${text.substring(0, 50)}`);
 
