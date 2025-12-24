@@ -57,7 +57,11 @@ function buildStartChallengeModal() {
               type: 'plain_text',
               text: 'Total Weight Loss (pounds)'
             },
-            value: 'total'
+            value: 'total',
+            description: {
+              type: 'plain_text',
+              text: 'Winner loses most pounds'
+            }
           },
           options: [
             {
