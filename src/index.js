@@ -75,7 +75,16 @@ expressApp.get('/health', (req, res) => {
 app.message(async ({ message, client, team }) => {
   try {
     // Log all incoming messages for debugging
-    console.log(`📨 Message received - Team: ${team || 'unknown'}, Channel: ${message.channel}, User: ${message.user}, Subtype: ${message.subtype || 'none'}, Bot ID: ${message.bot_id || 'none'}, Channel Type: ${message.channel_type || 'not set'}`);
+    const channelType = message.channel_type || 'not set';
+    const channelId = message.channel || 'unknown';
+    console.log(`📨 Message received - Team: ${team || 'unknown'}, Channel: ${channelId}, User: ${message.user || 'unknown'}, Subtype: ${message.subtype || 'none'}, Bot ID: ${message.bot_id || 'none'}, Channel Type: ${channelType}`);
+    
+    // Log if this is a channel message (for debugging)
+    if (channelType !== 'im' && !channelId.startsWith('D')) {
+      console.log(`   ℹ️ This appears to be a CHANNEL message (channel_type: ${channelType}, channel_id: ${channelId})`);
+    } else {
+      console.log(`   ℹ️ This appears to be a DM message`);
+    }
     
     // Skip bot messages and messages with subtypes
     if (message.subtype || message.bot_id) {
@@ -226,6 +235,13 @@ app.view('start_challenge_modal', async ({ ack, body, client }) => {
       console.log('   Bot User ID:', authTest.user_id);
       console.log('   Bot User Name:', authTest.user);
       console.log('   Team:', authTest.team);
+      
+      // Log important reminders
+      console.log('\n📋 Important reminders:');
+      console.log('   - Bot must be invited to channels to receive messages');
+      console.log('   - Event Subscriptions must include: message.channels and message.im');
+      console.log('   - Bot Token Scopes must include: channels:history');
+      console.log('   - After changing Event Subscriptions, reinstall the app\n');
     } catch (error) {
       console.error('❌ Failed to verify Slack API connection:', error.message);
       console.error('   This means Socket Mode is not connected properly.');
