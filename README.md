@@ -39,7 +39,8 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
 3. Go to **OAuth & Permissions**:
    - Add the following Bot Token Scopes:
      - `app_mentions:read`
-     - `channels:history` (required for channel messages)
+     - `channels:history` (required for public channel messages)
+     - `groups:history` (required for private channel/group messages)
      - `chat:write`
      - `commands`
      - `im:history`
@@ -52,7 +53,8 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
 4. Go to **Event Subscriptions**:
    - Enable Events
    - Under "Subscribe to bot events", add:
-     - `message.channels` (required for channel messages)
+     - `message.channels` (required for public channel messages)
+     - `message.groups` (required for private channel/group messages)
      - `message.im` (for DM messages)
    - Save Changes
    - **Important**: Reinstall the app to your workspace after adding events
@@ -79,8 +81,9 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
    - Scroll down to find the Channel ID (starts with `C`)
 
 **Note**: If channel messages aren't working, make sure:
-- You've added `channels:history` scope in OAuth & Permissions
-- You've subscribed to `message.channels` event in Event Subscriptions
+- You've added `channels:history` scope for public channels (and `groups:history` for private channels) in OAuth & Permissions
+- You've subscribed to `message.channels` event for public channels (and `message.groups` for private channels) in Event Subscriptions
+- The bot has been invited to the channel (type `/invite @YourBotName` in the channel)
 - You've reinstalled the app to your workspace after adding events
 
 ### 2. Google Sheets Setup

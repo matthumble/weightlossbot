@@ -239,8 +239,8 @@ app.view('start_challenge_modal', async ({ ack, body, client }) => {
       // Log important reminders
       console.log('\n📋 Important reminders:');
       console.log('   - Bot must be invited to channels to receive messages');
-      console.log('   - Event Subscriptions must include: message.channels and message.im');
-      console.log('   - Bot Token Scopes must include: channels:history');
+      console.log('   - Event Subscriptions must include: message.channels, message.groups, and message.im');
+      console.log('   - Bot Token Scopes must include: channels:history (public) and groups:history (private)');
       console.log('   - After changing Event Subscriptions, reinstall the app\n');
     } catch (error) {
       console.error('❌ Failed to verify Slack API connection:', error.message);
