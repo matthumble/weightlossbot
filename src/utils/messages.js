@@ -19,6 +19,33 @@ function formatLeaderboardEntry(username, weightLost, baselineWeight, currentWei
 }
 
 /**
+ * Format leaderboard entry with mode awareness
+ * @param {string} username - User's Slack username
+ * @param {number} weightLost - Total weight lost in pounds
+ * @param {number} baselineWeight - Starting weight
+ * @param {number} currentWeight - Current weight
+ * @param {string} mode - Competition mode: "total" or "percentage"
+ * @returns {string} - Formatted leaderboard entry
+ */
+function formatLeaderboardEntryWithMode(username, weightLost, baselineWeight, currentWeight, mode) {
+  if (mode === 'percentage') {
+    // Calculate percentage: ((baseline - current) / baseline) * 100
+    const percentageLost = baselineWeight > 0 
+      ? ((weightLost / baselineWeight) * 100)
+      : 0;
+    
+    const percentageDisplay = percentageLost > 0
+      ? `-${percentageLost.toFixed(2)}%`
+      : `+${Math.abs(percentageLost).toFixed(2)}%`;
+    
+    return `@${username}: ${percentageDisplay} (${baselineWeight}→${currentWeight})`;
+  } else {
+    // Default to total mode
+    return formatLeaderboardEntry(username, weightLost, baselineWeight, currentWeight);
+  }
+}
+
+/**
  * Format challenge status message
  * @param {string} deadline - Deadline date (YYYY-MM-DD)
  * @param {number} daysLeft - Days remaining
@@ -40,6 +67,7 @@ function formatChallengeStatus(deadline, daysLeft) {
 
 module.exports = {
   formatLeaderboardEntry,
+  formatLeaderboardEntryWithMode,
   formatChallengeStatus
 };
 

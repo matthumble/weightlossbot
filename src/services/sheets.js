@@ -477,6 +477,75 @@ async function setConfigValue(key, value) {
   }
 }
 
+/**
+ * Get competition mode
+ * @returns {string} - Competition mode: "total" or "percentage" (defaults to "total")
+ */
+async function getCompetitionMode() {
+  const mode = await getConfigValue('competition_mode');
+  return mode || 'total'; // Default to "total" for backward compatibility
+}
+
+/**
+ * Set competition mode
+ * @param {string} mode - Competition mode: "total" or "percentage"
+ */
+async function setCompetitionMode(mode) {
+  if (mode !== 'total' && mode !== 'percentage') {
+    throw new Error('Competition mode must be "total" or "percentage"');
+  }
+  await setConfigValue('competition_mode', mode);
+}
+
+/**
+ * Get competition start date
+ * @returns {string|null} - Start date (YYYY-MM-DD) or null if not set
+ */
+async function getCompetitionStartDate() {
+  return await getConfigValue('competition_start_date');
+}
+
+/**
+ * Set competition start date
+ * @param {string} date - Start date (YYYY-MM-DD)
+ */
+async function setCompetitionStartDate(date) {
+  await setConfigValue('competition_start_date', date);
+}
+
+/**
+ * Check if there is an active competition (has participants with baselines)
+ * @returns {boolean} - True if there are users with baseline weights set
+ */
+async function hasActiveCompetition() {
+  initialize();
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${SHEET_NAME}!A2:C`,
+    });
+
+    const rows = response.data.values || [];
+    
+    // Check if any row has a baseline weight set
+    for (const row of rows) {
+      if (row[COLUMNS.BASELINE_WEIGHT] && row[COLUMNS.BASELINE_WEIGHT].trim() !== '') {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    // If sheet doesn't exist or error, assume no active competition
+    if (error.code === 400) {
+      return false;
+    }
+    console.error('Error checking active competition:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getUserData,
   setBaseline,
@@ -487,5 +556,10 @@ module.exports = {
   getDeadline,
   getConfigValue,
   setConfigValue,
+  getCompetitionMode,
+  setCompetitionMode,
+  getCompetitionStartDate,
+  setCompetitionStartDate,
+  hasActiveCompetition,
 };
 

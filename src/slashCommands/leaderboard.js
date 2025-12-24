@@ -3,7 +3,7 @@
  */
 
 const sheets = require('../services/sheets');
-const { formatLeaderboardEntry, formatChallengeStatus } = require('../utils/messages');
+const { formatLeaderboardEntry, formatLeaderboardEntryWithMode, formatChallengeStatus } = require('../utils/messages');
 const { daysBetween, getTodayDate } = require('../utils/validation');
 
 /**
@@ -24,6 +24,9 @@ async function handleLeaderboard(ack, respond, client) {
       });
       return;
     }
+
+    // Get competition mode
+    const mode = await sheets.getCompetitionMode();
 
     // Get all users
     const users = await sheets.getAllUsers();
@@ -49,7 +52,7 @@ async function handleLeaderboard(ack, respond, client) {
         ? user.baselineWeight 
         : parseFloat(user.baselineWeight);
       
-      if (isNaN(baselineWeight)) {
+      if (isNaN(baselineWeight) || baselineWeight <= 0) {
         console.error('Invalid baseline weight for user:', user.username, user.baselineWeight);
         continue;
       }
@@ -74,16 +77,27 @@ async function handleLeaderboard(ack, respond, client) {
 
       const weightLost = baselineWeight - currentWeight;
       
+      // Calculate metric based on mode
+      let metric;
+      if (mode === 'percentage') {
+        // Percentage: ((baseline - current) / baseline) * 100
+        metric = baselineWeight > 0 ? (weightLost / baselineWeight) * 100 : 0;
+      } else {
+        // Total mode: use weight lost in pounds
+        metric = weightLost;
+      }
+      
       leaderboard.push({
         username: user.username,
         baselineWeight: baselineWeight,
         currentWeight: currentWeight,
         weightLost: weightLost,
+        metric: metric, // The metric used for sorting
       });
     }
 
-    // Sort by weight lost (descending)
-    leaderboard.sort((a, b) => b.weightLost - a.weightLost);
+    // Sort by metric (descending)
+    leaderboard.sort((a, b) => b.metric - a.metric);
 
     // Get top 5
     const top5 = leaderboard.slice(0, 5);
@@ -105,7 +119,7 @@ async function handleLeaderboard(ack, respond, client) {
     } else {
       top5.forEach((entry, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        message += `${medal} ${formatLeaderboardEntry(entry.username, entry.weightLost, entry.baselineWeight, entry.currentWeight)}\n`;
+        message += `${medal} ${formatLeaderboardEntryWithMode(entry.username, entry.weightLost, entry.baselineWeight, entry.currentWeight, mode)}\n`;
       });
     }
 

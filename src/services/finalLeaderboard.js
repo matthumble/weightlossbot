@@ -4,7 +4,7 @@
  */
 
 const sheets = require('./sheets');
-const { formatLeaderboardEntry } = require('../utils/messages');
+const { formatLeaderboardEntry, formatLeaderboardEntryWithMode } = require('../utils/messages');
 const { getTodayDate } = require('../utils/validation');
 
 /**
@@ -56,6 +56,9 @@ async function sendFinalLeaderboard(client) {
       return;
     }
 
+    // Get competition mode
+    const mode = await sheets.getCompetitionMode();
+
     // Get all users
     const users = await sheets.getAllUsers();
 
@@ -77,7 +80,7 @@ async function sendFinalLeaderboard(client) {
         ? user.baselineWeight 
         : parseFloat(user.baselineWeight);
       
-      if (isNaN(baselineWeight)) {
+      if (isNaN(baselineWeight) || baselineWeight <= 0) {
         continue;
       }
 
@@ -100,16 +103,27 @@ async function sendFinalLeaderboard(client) {
 
       const weightLost = baselineWeight - currentWeight;
       
+      // Calculate metric based on mode
+      let metric;
+      if (mode === 'percentage') {
+        // Percentage: ((baseline - current) / baseline) * 100
+        metric = baselineWeight > 0 ? (weightLost / baselineWeight) * 100 : 0;
+      } else {
+        // Total mode: use weight lost in pounds
+        metric = weightLost;
+      }
+      
       leaderboard.push({
         username: user.username,
         baselineWeight: baselineWeight,
         currentWeight: currentWeight,
         weightLost: weightLost,
+        metric: metric, // The metric used for sorting
       });
     }
 
-    // Sort by weight lost (descending)
-    leaderboard.sort((a, b) => b.weightLost - a.weightLost);
+    // Sort by metric (descending)
+    leaderboard.sort((a, b) => b.metric - a.metric);
 
     // Get deadline for the message
     const deadline = await sheets.getDeadline();
@@ -127,7 +141,7 @@ async function sendFinalLeaderboard(client) {
       // Show all participants (not just top 5)
       leaderboard.forEach((entry, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        message += `${medal} ${formatLeaderboardEntry(entry.username, entry.weightLost, entry.baselineWeight, entry.currentWeight)}\n`;
+        message += `${medal} ${formatLeaderboardEntryWithMode(entry.username, entry.weightLost, entry.baselineWeight, entry.currentWeight, mode)}\n`;
       });
     }
 

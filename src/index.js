@@ -17,6 +17,7 @@ const { handleLeaderboard } = require('./slashCommands/leaderboard');
 const { handleResetChallenge } = require('./slashCommands/resetChallenge');
 const { handleSetDeadline } = require('./slashCommands/setDeadline');
 const { handleChallengeStatus } = require('./slashCommands/challengeStatus');
+const { handleStartChallenge, handleStartChallengeSubmit } = require('./slashCommands/startChallenge');
 
 // Import final leaderboard service
 const { shouldSendFinalLeaderboard, sendFinalLeaderboard } = require('./services/finalLeaderboard');
@@ -101,6 +102,15 @@ app.command('/set-deadline', async ({ ack, respond, body }) => {
 
 app.command('/challenge-status', async ({ ack, respond }) => {
   await handleChallengeStatus(ack, respond);
+});
+
+app.command('/start-challenge', async ({ ack, body, client }) => {
+  await handleStartChallenge(ack, body, client);
+});
+
+// Register modal submission handlers
+app.view('start_challenge_modal', async ({ ack, body, client }) => {
+  await handleStartChallengeSubmit(ack, body, client);
 });
 
 // Start the Express server and Bolt app
