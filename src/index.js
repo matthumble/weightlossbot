@@ -74,23 +74,50 @@ expressApp.get('/health', (req, res) => {
 // Handle baseline and checkin commands (works in both DMs and channels)
 app.message(async ({ message, client, team }) => {
   try {
+    // Log all incoming messages for debugging
+    console.log(`📨 Message received - Team: ${team || 'unknown'}, Channel: ${message.channel}, User: ${message.user}, Subtype: ${message.subtype || 'none'}, Bot ID: ${message.bot_id || 'none'}, Channel Type: ${message.channel_type || 'not set'}`);
+    
     // Skip bot messages and messages with subtypes
     if (message.subtype || message.bot_id) {
+      console.log(`⏭️ Skipping message - subtype: ${message.subtype || 'none'}, bot_id: ${message.bot_id || 'none'}`);
       return;
     }
 
     const text = (message.text || '').toLowerCase().trim();
     
+    // Log the message text for debugging
+    console.log(`📝 Message text: "${message.text || '(empty)'}" -> processed as: "${text}"`);
+
     // Only process baseline and checkin commands
     if (!text.startsWith('baseline') && !text.startsWith('checkin')) {
+      console.log(`⏭️ Skipping message - not a baseline or checkin command`);
       return;
     }
 
+    // Determine if message is from DM or channel (for logging purposes)
+    const isDM = message.channel_type === 'im' || (message.channel && message.channel.startsWith('D'));
+    const location = isDM ? 'DM' : 'channel';
+    console.log(`📩 Command received in ${location} from user ${message.user} in channel ${message.channel}: ${text.substring(0, 50)}`);
+
     // Pass the channel ID so handlers can respond in the same channel/DM
     if (text.startsWith('baseline')) {
-      await handleBaseline(message, client, message.channel);
+      console.log(`🎯 Processing baseline command`);
+      try {
+        await handleBaseline(message, client, message.channel);
+        console.log(`✅ Baseline command completed`);
+      } catch (error) {
+        console.error(`❌ Error in handleBaseline:`, error);
+        throw error; // Re-throw to be caught by outer catch
+      }
     } else if (text.startsWith('checkin')) {
-      await handleCheckin(message, client, message.channel);
+      console.log(`🎯 Processing checkin command`);
+      try {
+        await handleCheckin(message, client, message.channel);
+        console.log(`✅ Checkin command completed`);
+      } catch (error) {
+        console.error(`❌ Error in handleCheckin:`, error);
+        throw error; // Re-throw to be caught by outer catch
+      }
     }
   } catch (error) {
     console.error('❌ Error processing message:', error);
