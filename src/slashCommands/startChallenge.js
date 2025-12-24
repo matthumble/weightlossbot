@@ -46,8 +46,12 @@ function buildStartChallengeModal() {
           text: 'Competition Mode'
         },
         element: {
-          type: 'radio_buttons',
+          type: 'static_select',
           action_id: 'competition_mode',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Select competition mode'
+          },
           initial_option: {
             text: {
               type: 'plain_text',
@@ -64,7 +68,7 @@ function buildStartChallengeModal() {
               value: 'total',
               description: {
                 type: 'plain_text',
-                text: 'Winner is determined by total pounds lost'
+                text: 'Winner loses most pounds'
               }
             },
             {
@@ -75,10 +79,14 @@ function buildStartChallengeModal() {
               value: 'percentage',
               description: {
                 type: 'plain_text',
-                text: 'Winner is determined by percentage of body weight lost'
+                text: 'Winner loses highest % of body weight'
               }
             }
           ]
+        },
+        hint: {
+          type: 'plain_text',
+          text: 'Total: Winner loses most pounds. Percentage: Winner loses highest % of body weight.'
         }
       },
       {
@@ -199,12 +207,18 @@ async function handleStartChallenge(ack, body, client) {
     }
 
     // Open the modal
+    const modal = buildStartChallengeModal();
+    console.log('Opening modal with structure:', JSON.stringify(modal, null, 2));
+    
     await client.views.open({
       trigger_id: body.trigger_id,
-      view: buildStartChallengeModal()
+      view: modal
     });
   } catch (error) {
     console.error('Error opening start challenge modal:', error);
+    if (error.data && error.data.response_metadata && error.data.response_metadata.messages) {
+      console.error('Slack error messages:', error.data.response_metadata.messages);
+    }
   }
 }
 
