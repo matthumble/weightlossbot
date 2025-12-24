@@ -17,7 +17,7 @@ function buildStartChallengeModal() {
     callback_id: 'start_challenge_modal',
     title: {
       type: 'plain_text',
-      text: 'Start Weight Loss Competition'
+      text: 'Start Competition'
     },
     submit: {
       type: 'plain_text',
@@ -184,6 +184,7 @@ async function handleStartChallenge(ack, body, client) {
         trigger_id: body.trigger_id,
         view: {
           type: 'modal',
+          callback_id: 'access_denied_modal',
           title: {
             type: 'plain_text',
             text: 'Access Denied'
@@ -337,6 +338,7 @@ async function handleStartChallengeSubmit(ack, body, client) {
       response_action: 'update',
       view: {
         type: 'modal',
+        callback_id: 'start_challenge_success',
         title: {
           type: 'plain_text',
           text: 'Competition Started!'
