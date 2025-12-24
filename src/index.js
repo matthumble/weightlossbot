@@ -71,19 +71,39 @@ expressApp.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Handle DM commands (baseline and checkin)
-app.message(async ({ message, client }) => {
-  // Only process messages in DMs (channel_type is 'im')
-  if (message.channel_type !== 'im' || message.subtype || message.bot_id) {
-    return;
-  }
+// Handle baseline and checkin commands (works in both DMs and channels)
+app.message(async ({ message, client, team }) => {
+  try {
+    // Skip bot messages and messages with subtypes
+    if (message.subtype || message.bot_id) {
+      return;
+    }
 
-  const text = (message.text || '').toLowerCase().trim();
+    const text = (message.text || '').toLowerCase().trim();
+    
+    // Only process baseline and checkin commands
+    if (!text.startsWith('baseline') && !text.startsWith('checkin')) {
+      return;
+    }
 
-  if (text.startsWith('baseline')) {
-    await handleBaseline(message, client);
-  } else if (text.startsWith('checkin')) {
-    await handleCheckin(message, client);
+    // Pass the channel ID so handlers can respond in the same channel/DM
+    if (text.startsWith('baseline')) {
+      await handleBaseline(message, client, message.channel);
+    } else if (text.startsWith('checkin')) {
+      await handleCheckin(message, client, message.channel);
+    }
+  } catch (error) {
+    console.error('❌ Error processing message:', error);
+    console.error('Error stack:', error.stack);
+    // Try to send error message to user if possible
+    try {
+      await client.chat.postMessage({
+        channel: message.channel,
+        text: '❌ An error occurred processing your message. Please try again.',
+      });
+    } catch (sendError) {
+      console.error('Failed to send error message to user:', sendError);
+    }
   }
 });
 

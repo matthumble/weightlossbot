@@ -1,5 +1,5 @@
 /**
- * Handle 'baseline' DM command
+ * Handle 'baseline' command (works in both DMs and channels)
  */
 
 const sheets = require('../services/sheets');
@@ -9,8 +9,9 @@ const { parseWeight, getTodayDate } = require('../utils/validation');
  * Handle baseline command
  * @param {Object} event - Slack message event
  * @param {Object} client - Slack WebClient
+ * @param {string} responseChannel - Channel ID to send response to (DM or channel)
  */
-async function handleBaseline(event, client) {
+async function handleBaseline(event, client, responseChannel) {
   const userId = event.user;
   const text = event.text || '';
 
@@ -25,23 +26,23 @@ async function handleBaseline(event, client) {
         const parsed = parseFloat(weightMatch[1]);
         if (parsed < 100) {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Weight must be at least 100lbs. Please enter a valid weight.",
           });
         } else if (parsed > 1000) {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Weight must be 1000lbs or less. Please enter a valid weight.",
           });
         } else {
           await client.chat.postMessage({
-            channel: userId,
+            channel: responseChannel,
             text: "❌ Invalid format. Please use: `baseline 200lbs`\nExample: `baseline 200lbs`",
           });
         }
       } else {
         await client.chat.postMessage({
-          channel: userId,
+          channel: responseChannel,
           text: "❌ Invalid format. Please use: `baseline 200lbs`\nExample: `baseline 200lbs`",
         });
       }
@@ -56,7 +57,7 @@ async function handleBaseline(event, client) {
     const existingUser = await sheets.getUserData(userId);
     if (existingUser && existingUser.baselineWeight !== null) {
       await client.chat.postMessage({
-        channel: userId,
+        channel: responseChannel,
         text: `❌ You already have a baseline weight set: ${existingUser.baselineWeight}lbs (set on ${existingUser.baselineDate}).\nTo update your baseline, contact an admin to reset the challenge.`,
       });
       return;
@@ -67,7 +68,7 @@ async function handleBaseline(event, client) {
     await sheets.setBaseline(userId, username, weight, today);
 
     await client.chat.postMessage({
-      channel: userId,
+      channel: responseChannel,
       text: `✅ Baseline weight set: ${weight}lbs\nDate: ${today}\n\nYou can now log checkins using: \`checkin 185lbs\``,
     });
   } catch (error) {
@@ -79,7 +80,7 @@ async function handleBaseline(event, client) {
     }
 
     await client.chat.postMessage({
-      channel: userId,
+      channel: responseChannel,
       text: errorMessage,
     });
   }
