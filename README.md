@@ -39,6 +39,7 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
 3. Go to **OAuth & Permissions**:
    - Add the following Bot Token Scopes:
      - `app_mentions:read`
+     - `channels:history` (required for channel messages)
      - `chat:write`
      - `commands`
      - `im:history`
@@ -48,26 +49,39 @@ A production-ready Slack bot built with Bolt for JavaScript that tracks fitness 
    - Install the app to your workspace
    - Copy the **Bot User OAuth Token** (starts with `xoxb-`)
 
-4. Go to **Socket Mode**:
+4. Go to **Event Subscriptions**:
+   - Enable Events
+   - Under "Subscribe to bot events", add:
+     - `message.channels` (required for channel messages)
+     - `message.im` (for DM messages)
+   - Save Changes
+   - **Important**: Reinstall the app to your workspace after adding events
+
+5. Go to **Socket Mode**:
    - Enable Socket Mode
    - Create an app-level token with `connections:write` scope
    - Copy the **App-Level Token** (starts with `xapp-`)
 
-5. Go to **Slash Commands**:
+6. Go to **Slash Commands**:
    - Create 4 slash commands:
      - `/leaderboard` - Description: "View the weight loss leaderboard"
      - `/reset-challenge` - Description: "Reset the challenge (admin only)"
      - `/set-deadline` - Description: "Set challenge deadline (admin only)"
      - `/challenge-status` - Description: "View challenge status and deadline"
 
-6. Get your Slack User ID (for admin access):
+7. Get your Slack User ID (for admin access):
    - Go to your Slack profile
    - Click the three dots menu → Copy member ID
    - This is your User ID (starts with `U`)
 
-7. Get your channel ID (for #fitness-channel):
+8. Get your channel ID (for #fitness-channel):
    - Right-click on the channel → View channel details
    - Scroll down to find the Channel ID (starts with `C`)
+
+**Note**: If channel messages aren't working, make sure:
+- You've added `channels:history` scope in OAuth & Permissions
+- You've subscribed to `message.channels` event in Event Subscriptions
+- You've reinstalled the app to your workspace after adding events
 
 ### 2. Google Sheets Setup
 
